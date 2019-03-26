@@ -1,9 +1,10 @@
 const AMOUNT = 500;
-let particles = [];
+let P;
 
 let WIDTH;
 let HEIGHT;
 let CENTER = {};
+
 function setup () {
 	WIDTH = 500;// windowWidth;
 	HEIGHT = 500;// windowHeight;
@@ -11,53 +12,77 @@ function setup () {
 	createCanvas(WIDTH, HEIGHT);
 	noStroke();
 	fill(100);
-	for (let i = 0; i < AMOUNT; i++) {
-		particles.push(new Particle());
-	}
+	P = new PS(1);
 }
 
 function draw () {
-	background(255, 255, 255, 100);
-	for (const particle of particles) {
-		particle.draw();
-		particle.update();
-	}
+	background(255, 255, 255, 10);
+	P.draw();
+	P.update();
+	P.guard();
 }
 
-class Particle {
-	constructor (x, y) {
-		this.position = createVector(CENTER.x, CENTER.y);
-		// this.position = createVector(random(0, WIDTH), random(0, HEIGHT));
-		this.velocity = p5.Vector.random2D().mult(1);
-		this.choc = { x: false, y: false };
+class PS {
+	constructor (n) {
+		this.particles = [];
+		for (let i = 0; i < n; i++) {
+			this.particles.push(new Particle())
+		}
 	}
-	update () {
-		this.guard();
+	update () { this.particles.map(x => x.update()); }
+	draw () { this.particles.map(x => x.draw()); }
+	guard () { this.particles.map(x => x.guard()); }
+}
+class Particle {
+	constructor (x = 0, y = 0) {
+		this.position = createVector(random(0, WIDTH), random(0, HEIGHT));
+		// this.acceleration = createVector(0, 1)
+		this.acceleration = createVector(random(0, 2) - 1, random(0, 2) - 1)
+		this.velocity = createVector(0, 0);
+		this.guardMode = 'bounce';
+		this.color = {
+			r: random(0, 255),
+			g: random(0, 255),
+			b: random(0, 255)
+		};
+	}
+	update (WIDTH, HEIGHT) {
+		this.velocity.add(this.acceleration);
 		this.position.add(this.velocity);
+		// this.velocity = createVector(0,0)
 	}
 	draw () {
-		ellipse(this.position.x, this.position.y, 2);
+		fill(this.color.r, this.color.g, this.color.b);
+		ellipse(this.position.x, this.position.y, 20);
 	}
 	guard () {
-		if (this.position.x > WIDTH || this.position.x < 0) {
-			if (this.choc.x) {
-				this.velocity.x *= -1;
-			} else {
-				this.position.x = WIDTH / 2;
-				this.position.y = HEIGHT / 2;
-				this.choc.x = true;
-				this.choc.y = true;
-			}
-		}
-		if (this.position.y > HEIGHT || this.position.y < 0) {
-			if (this.choc.y) {
-				this.velocity.y *= -1;
-			} else {
-				this.position.x = WIDTH / 2;
-				this.position.y = HEIGHT / 2;
-				this.choc.x = true;
-				this.choc.y = true;
-			}
+		switch(this.guardMode) {
+			case 'bounce':
+				if (this.position.x > WIDTH || this.position.x < 0) {
+					if (this.position.x > WIDTH) {
+						this.position.x = WIDTH;
+					} else {
+						this.position.x = 0;
+					}
+					this.velocity.x *= -1;
+				}
+				if (this.position.y > HEIGHT || this.position.y < 0) {
+					this.velocity.y *= -1;
+					if (this.position.y > HEIGHT) {
+						this.position.y = HEIGHT;
+					} else {
+						this.position.y = 0;
+					}
+				}
+				break;
+			default:
+				if (this.position.x > WIDTH || this.position.x < 0) {
+						this.position.x = WIDTH / 2;
+				}
+				if (this.position.y > HEIGHT || this.position.y < 0) {
+						this.position.y = HEIGHT / 2;
+				}
+				break;
 		}
 	}
 }
