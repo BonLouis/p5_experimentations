@@ -14,7 +14,7 @@ function setup () {
 	createCanvas(WIDTH, HEIGHT);
 	noStroke();
 	fill(100);
-	P = new PS(1);
+	P = new PS(1, 100, HEIGHT / 2);
 	wind = createVector(0.0001, 0);
 	gravity = createVector(0, 0.01);
 	setInterval(() => {
@@ -26,24 +26,24 @@ function draw () {
 	P.draw();
 	P.update();
 	P.guard();
-	P.apply(gravity);
 }
 
 class PS {
-	constructor (n) {
+	constructor (n, x = 0, y = 0) {
+		this.position = createVector(x, y);
 		this.particles = [];
 		for (let i = 0; i < n; i++) {
 			this.particles.push(
-				new Particle(WIDTH / 2, 60)
+				new Particle(this.position.x, this.position.y)
 			)
-			setTimeout(() => this.particles.shift(), 2000);
+			setTimeout(() => this.particles.shift(), 1000);
 		}
 	}
 	createOne () {
 		this.particles.push(
-			new Particle(WIDTH / 2, 60)
+			new Particle(this.position.x, this.position.y)
 		)
-		setTimeout(() => this.particles.shift(), 2000);
+		setTimeout(() => this.particles.shift(), 1000);
 	}
 	update () { this.particles.map(x => x.update()); }
 	draw () { this.particles.map(x => x.draw()); }
@@ -55,22 +55,27 @@ class Particle {
 		this.position = createVector(x, y);
 		// this.acceleration = createVector(0, 1)
 		this.acceleration = createVector(0, 0);
-		this.velocity = createVector(random(1, 2), 0);
+		this.velocity = createVector(random(4, 6), random(-1, 1));
 		this.guardMode = 'bounce';
 		this.radius = 5;
-		this.color = {
-			r: random(0, 255),
-			g: random(0, 255),
-			b: random(0, 255)
-		};
+		this.grey = 0;
+		// this.grey = random(50, 205);
+		this.alive = 100;
+		// this.color = {
+		// 	r: random(0, 255),
+		// 	g: random(0, 255),
+		// 	b: random(0, 255)
+		// };
 	}
 	update (WIDTH, HEIGHT) {
 		this.velocity.add(this.acceleration);
 		this.position.add(this.velocity);
+		this.alive--;
 		// this.velocity = createVector(0,0)
 	}
 	draw () {
-		fill(this.color.r, this.color.g, this.color.b);
+		fill(this.grey, this.grey, this.grey, this.alive);
+		// fill(this.color.r, this.color.g, this.color.b);
 		ellipse(this.position.x, this.position.y, this.radius * 2);
 	}
 	apply (force) {
@@ -85,7 +90,7 @@ class Particle {
 					} else {
 						this.position.x = this.radius;
 					}
-					this.velocity.x *= -0.5;
+					this.velocity.x *= -1;
 				}
 				if ((this.position.y + this.radius) > HEIGHT || (this.position.y - this.radius) < 0) {
 					if ((this.position.y + this.radius) > HEIGHT) {
@@ -93,7 +98,7 @@ class Particle {
 					} else {
 						this.position.y = this.radius;
 					}
-					this.velocity.y *= -0.5;
+					this.velocity.y *= -1;
 				}
 				break;
 			default:
