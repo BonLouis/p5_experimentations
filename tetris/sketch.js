@@ -54,8 +54,8 @@ function draw () {
 		if (alivePiece.isDead()) {
 			deadPieces.push(alivePiece);
 			checkLine();
-			// alivePiece = new (futurePieces.pop())();
-			// futurePieces.unshift(randomPiece());
+			alivePiece = new (futurePieces.pop())();
+			futurePieces.unshift(randomPiece());
 			if (alivePiece.isColliding()) {
 				lost = true;
 				console.log('Perdu !');
@@ -185,28 +185,73 @@ function isEmpty (obj) {
 	return true;
 }
 
-function keyReleased () {
-	console.log('clear', keyCode);
-	if (keyCode === DOWN_ARROW) {
-		alivePiece.tick();
+const eventsID = {
+	timeouts: {
+		[LEFT_ARROW]: [],
+		[RIGHT_ARROW]: [],
+		[DOWN_ARROW]: [],
+		[UP_ARROW]: [],
+		[CONTROL]: [],
+		[SPACE]: []
+	},
+	intervals: {
+		[LEFT_ARROW]: [],
+		[RIGHT_ARROW]: [],
+		[DOWN_ARROW]: [],
+		[UP_ARROW]: [],
+		[CONTROL]: [],
+		[SPACE]: []
 	}
-	clearInterval(keyIntervalID);
-	clearTimeout(keyTimeoutID);
-	return false; // prevent any default behavior
+};
+
+// to avoid the double tick on the next piece
+let aliveTickIsDisabled = false;
+function clearEventsID () {
+	for (const id of eventsID.timeouts[keyCode]) { clearTimeout(id); }
+	eventsID.timeouts[keyCode] = [];
+	for (const id of eventsID.intervals[keyCode]) { clearInterval(id); }
+	eventsID.intervals[keyCode] = [];
+}
+function keyReleased () {
+	if (keyCode in CONTROLS) {
+		if (aliveTickIsDisabled && keyCode === DOWN_ARROW) {
+			alivePiece.tick();
+		}
+		// A security if multiple events were pushed
+		clearEventsID();
+		return false; // prevent any default behavior
+	}
 }
 function keyPressed () {
 	if (keyCode in CONTROLS) {
 		if (keyCode === DOWN_ARROW) {
-			console.log('disable');
-			alivePiece.disableTick();
+			if (!alivePiece.willCollideY()) {
+				alivePiece.disableTick();
+				aliveTickIsDisabled = true;
+			}
 		}
+		// We execute it once,
 		CONTROLS[keyCode]();
-		if (keyCode !== UP_ARROW) {
-			keyTimeoutID = setTimeout(() => {
-				keyIntervalID = setInterval(() => {
-					CONTROLS[keyCode]();
-				}, 100);
-			}, 100);
+
+		// Then we check if the input is still pressed
+		// , but we dont want to multiply rotation nor harddrop.
+		const dontRedoThose = [UP_ARROW, CONTROL, SPACE];
+		if (!dontRedoThose.includes(keyCode)) {
+			// In 100ms, we redo action every 100ms...
+			// keyCode argument in event is closured in IIFE to avoid events collision.
+			eventsID.timeouts[keyCode].push(
+				setTimeout(((keyCodeClosured) => () => {
+					eventsID.intervals[keyCodeClosured].push(
+						setInterval(((deepKeyCodeClosured) => () => {
+							// to avoid the double tick on the next piece
+							if (alivePiece.willCollideY()) {
+								aliveTickIsDisabled = false;
+							}
+							CONTROLS[deepKeyCodeClosured]();
+						})(keyCodeClosured), 100)
+					);
+				})(keyCode), 100)
+			);
 		}
 	}
 }

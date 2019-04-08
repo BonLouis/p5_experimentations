@@ -49,13 +49,9 @@ class Tetromino {
 			}
 		}, this.speed);
 	}
-	disableTick () {
-		console.log('unticking');
-		clearInterval(this.tickID);
-	}
-	someSquares (cb) {
-		return this.sq[this.rot].some(cb);
-	}
+	disableTick () { clearInterval(this.tickID); }
+	someSquares (cb) { return this.sq[this.rot].some(cb); }
+	isDead () { return !this.alive; }
 	isColliding () {
 		return this.someSquares(sq => {
 			if (this.pos[0] + sq[0] < 0 || this.pos[0] + sq[0] >= cols) {
@@ -120,7 +116,6 @@ class Tetromino {
 			});
 		});
 	}
-	isDead () { return !this.alive; }
 	setX (n) {
 		if (!this.willCollideX(n)) {
 			this.pos[0] += n;
@@ -130,6 +125,8 @@ class Tetromino {
 	setY (n) {
 		if (!this.willCollideY()) {
 			this.pos[1]++;
+		} else {
+			this.kill();
 		}
 		return this;
 	}
